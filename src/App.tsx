@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 import ChatList from './components/ChatList';
 import ChatWindow from './components/ChatWindow';
 import { Chat, Message } from './types';
-import { fetchChats, fetchMessages } from './api';
+import { fetchChats, fetchMessages, sendMessage } from './api';
+
+const socket = io(import.meta.env.VITE_SOCKET_URL);
 
 function App() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -11,7 +14,23 @@ function App() {
 
   useEffect(() => {
     fetchChats().then(setChats);
-  }, []);
+
+    socket.on('newMessage', ({ chatId, message }) => {
+      if (selectedChat && selectedChat.id === parseInt(chatId)) {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      }
+      // Update last message in chat list
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === parseInt(chatId) ? { ...chat, lastMessage: message.content } : chat
+        )
+      );
+    });
+
+    return () => {
+      socket.off('newMessage');
+    };
+  }, [selectedChat]);
 
   useEffect(() => {
     if (selectedChat) {
@@ -23,16 +42,16 @@ function App() {
     setSelectedChat(chat);
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (selectedChat) {
-      const newMessage: Message = {
-        id: Date.now(),
-        content,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-      };
+      const newMessage = await sendMessage(selectedChat.id, content, 'user');
       setMessages([...messages, newMessage]);
-      // Here you would typically send the message to your backend
+      // Update the last message in the chat list
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === selectedChat.id ? { ...chat, lastMessage: content } : chat
+        )
+      );
     }
   };
 

@@ -1,0 +1,8 @@
+{
+    "chats": [
+      { "id": 1, "name": "John Doe", "lastMessage": "Hello there!" },
+      { "id": 2, "name": "Jane Smith", "lastMessage": "How are you?" },
+      { "id": 3, "name": "Bob Johnson", "lastMessage": "See you later" }
+    ],
+    "messages": {}
+  }
